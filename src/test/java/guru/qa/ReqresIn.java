@@ -1,135 +1,115 @@
 package guru.qa;
 
+import guru.qa.models.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static guru.qa.specs.UserSpec.*;
+import static io.qameta.allure.Allure.step;
 import static io.restassured.RestAssured.given;
-import static io.restassured.http.ContentType.JSON;
-import static org.hamcrest.Matchers.is;
 
-public class ReqresIn extends TestBase {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+public class ReqresIn {
 
     @Test
     @DisplayName("GET метод возвращает корректную информацию об одном пользователе")
     void getSingleUserInfoTest() {
-        given()
-                .log().uri()
-                .log().method()
+        UserResponseModel response = step("Отправить GET запрос для отдельного пользователя", () ->
+        given(RequestSpec)
                 .when()
                 .get("/users/2")
                 .then()
-                .log().status()
-                .log().body()
-                .statusCode(200)
-                .body("data.id", is(2))
-                .body("data.email", is("janet.weaver@reqres.in"))
-                .body("data.first_name", is("Janet"))
-                .body("data.last_name", is("Weaver"))
-                .body("data.avatar", is("https://reqres.in/img/faces/2-image.jpg"));
+                .spec(userResponseSpec)
+                .extract().as(UserResponseModel.class));
+
+        step("Проверить ответ", () -> {
+                assertEquals(2, response.getData().getId());
+                assertEquals("janet.weaver@reqres.in", response.getData().getEmail());
+                assertEquals("Janet", response.getData().getFirstName());
+                assertEquals("Weaver", response.getData().getLastName());
+                assertEquals("https://reqres.in/img/faces/2-image.jpg", response.getData().getAvatar());
+        });
     }
 
     @Test
-    @DisplayName("GET метод возвращает корректное количество пользователей в списке")
+    @DisplayName("GET метод возвращает информацию о всех пользователях")
     void getCorrectListOfUsersTest() {
-        given()
-                .log().uri()
-                .log().method()
+        UserListResponseModel response = step("Отправить GET запрос для всех пользователей", () ->
+        given(RequestSpec)
                 .when()
                 .get("/users?page=2")
                 .then()
-                .log().status()
-                .log().body()
-                .statusCode(200)
-                .body("page", is(2))
-                .body("per_page", is(6))
-                .body("total", is(12))
-                .body("total_pages", is(2));
+                .spec(userResponseSpec)
+                .extract().as(UserListResponseModel.class));
+
+        step("Проверить ответ", () -> {
+            assertEquals(2, response.getPage());
+            assertEquals(6, response.getPerPage());
+            assertEquals(12, response.getTotal());
+            assertEquals(2, response.getTotalPages());
+            assertEquals(2, response.getTotalPages());
+            assertEquals(12,response.getData().get(5).getId());
+            assertEquals("rachel.howell@reqres.in", response.getData().get(5).getEmail());
+            assertEquals("Rachel", response.getData().get(5).getFirstName());
+            assertEquals("Howell", response.getData().get(5).getLastName());
+            assertEquals("https://reqres.in/img/faces/12-image.jpg", response.getData().get(5).getAvatar());
+        });
     }
 
     @Test
     @DisplayName("POST метод позволяет создать нового пользователя")
     void createNewUserTest() {
-        String userInfo = "{\n" + "\"name\": \"Harry\",\n" + "\"job\": \"magician\"\n" +"}";
+        UserCreationBodyModel userInfo = new UserCreationBodyModel();
+        userInfo.setName("Harry");
+        userInfo.setJob("farmer");
 
-        given()
-                .log().uri()
-                .log().method()
-                .contentType(JSON)
+        UserCreationResponseModel response = step("Отправить POST запрос для создания нового пользователя", () ->
+
+            given(RequestSpec)
                 .body(userInfo)
                 .when()
                 .post("/users")
                 .then()
-                .log().status()
-                .log().body()
-                .statusCode(201)
-                .body("name", is("Harry"))
-                .body("job", is("magician"));
+                .spec(userCreationResponseSpec)
+                .extract().as(UserCreationResponseModel.class));
+
+        step("Проверить ответ", () -> {
+            assertEquals("Harry", response.getName());
+            assertEquals("farmer", response.getJob());
+        });
     }
 
     @Test
     @DisplayName("PUT метод позволяет обновить информацию о пользователе")
     void updateUserTest() {
-        String initialUserInfo = "{\n" + "\"name\": \"Dudley\",\n" + "\"job\": \"muggle\"\n" +"}";
-        String changedUserInfo = "{\n" + "\"name\": \"Remus\",\n" + "\"job\": \"professor\"\n" +"}";
-        String id =
-                given()
-                .log().uri()
-                .log().method()
-                .contentType(JSON)
-                .body(initialUserInfo)
-                .when()
-                .post("/users")
-                .then()
-                .log().status()
-                .log().body()
-                .statusCode(201)
-                .body("name", is("Dudley"))
-                .body("job", is("muggle"))
-                .extract().path("id");
+        UserCreationBodyModel changedUserInfo = new UserCreationBodyModel();
+        changedUserInfo.setName("Bill");
+        changedUserInfo.setJob("professor");
 
-        given()
-                .log().uri()
-                .log().method()
-                .contentType(JSON)
+        UserUpdateResponseModel response = step("Отправить PUT запрос для обновления пользователя", () ->
+        given(RequestSpec)
                 .body(changedUserInfo)
                 .when()
-                .put("/users/"+id)
+                .put("/users/2")
                 .then()
-                .log().status()
-                .log().body()
-                .statusCode(200)
-                .body("name", is("Remus"))
-                .body("job", is("professor"));
+                .spec(userUpdateResponseSpec)
+                .extract().as(UserUpdateResponseModel.class));
+
+        step("Проверить ответ", () -> {
+            assertEquals("Bill", response.getName());
+            assertEquals("professor", response.getJob());
+        });
     }
 
     @Test
     @DisplayName("DELETE метод позволяет удалить информацию о пользователе")
     void deleteUserTest() {
-        String initialUserInfo = "{\n" + "\"name\": \"Ron\",\n" + "\"job\": \"student\"\n" +"}";
-        String id =
-                given()
-                        .log().uri()
-                        .log().method()
-                        .contentType(JSON)
-                        .body(initialUserInfo)
-                        .when()
-                        .post("/users")
-                        .then()
-                        .log().status()
-                        .log().body()
-                        .statusCode(201)
-                        .body("name", is("Ron"))
-                        .body("job", is("student"))
-                        .extract().path("id");
-
-        given()
-                .log().uri()
-                .log().method()
-                .contentType(JSON)
+        step("Проверить статус ответа при удалении пользователя", () ->
+        given(RequestSpec)
                 .when()
-                .delete("/users/"+id)
+                .delete("/users/2")
                 .then()
-                .log().status()
-                .statusCode(204);
+                .spec(userDeletionResponseSpec));
     }
 }

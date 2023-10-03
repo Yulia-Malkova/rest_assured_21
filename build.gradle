@@ -1,5 +1,8 @@
 plugins {
     id 'java'
+    id "io.freefair.lombok" version "8.3"
+    id 'io.qameta.allure' version '2.11.2'
+
 }
 
 group 'guru.qa'
@@ -13,7 +16,11 @@ dependencies {
     testImplementation(
             'io.rest-assured:rest-assured:5.3.1',
             'org.junit.jupiter:junit-jupiter:5.9.3',
-            'org.slf4j:slf4j-simple:2.0.7'
+            "io.rest-assured:json-schema-validator:5.3.1",
+            'org.slf4j:slf4j-simple:2.0.7',
+            'io.qameta.allure:allure-selenide:2.23.0',
+            "io.qameta.allure:allure-rest-assured:2.23.0",
+            'org.aeonbits.owner:owner:1.0.4'
     )
 
 }
